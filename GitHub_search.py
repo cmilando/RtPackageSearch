@@ -24,14 +24,15 @@ def by_search_term(query):
 
 if __name__ == "__main__":
 
-    by_search_term("reproduction numbers")
-    by_search_term("reproduction number")
+    # by_search_term("reproduction numbers")
+    # by_search_term("reproduction number")
+    #
+    # by_search_term("reproductive numbers")
+    # by_search_term("reproductive number")
+    #
+    # by_search_term("reproduction rate")
+    # by_search_term("reproduction rates")
 
-    by_search_term("reproductive numbers")
-    by_search_term("reproductive number")
-
-    by_search_term("reproduction rate")
-    by_search_term("reproduction rates")
-
+    by_search_term("Leave-kth-out cross validation for choosing a optimal parameter lambda")
 
 
