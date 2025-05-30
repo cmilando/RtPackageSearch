@@ -11,5 +11,6 @@ To find packages, we used these scripts:
 
 Then here is the code for the images in the manuscript:
 
-- `01_FixedSlidingWindows.R`
-- `02_RandomWalk.R`
+- `01_ReportsInfections.R`
+- `02_FixedSlidingWindows.R`
+- `03_RandomWalk.R`
