@@ -14,3 +14,7 @@ Then here is the code for the images in the manuscript:
 - `01_ReportsInfections.R`
 - `02_FixedSlidingWindows.R`
 - `03_RandomWalk.R`
+- B-splines
+- Filtering
+- Gaussian process
+- `07_mergePlots.R`

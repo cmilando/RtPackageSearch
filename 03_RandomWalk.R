@@ -91,39 +91,74 @@ lastday <- max(R_df_all$date)
 # ----------------------------------------------------------------------------
 # ////////////////////////////////////////////////////////////////////////////
 
-rt_max <- 2.5
+rt_max <- 3
 first_day <- min(reports_df$date)
 last_day <- max(reports_df$date)
 nowcast_start    = last_day - seeding_time
-forecast_window  = last_day + 7
+forecast_window  = last_day + 15
 
-plot_rt1 <- ggplot(subset(R_df_all)) +
-  theme_classic2() +
+plot_rt1 <- ggplot(R_df_all) +
   ##
-  geom_vline(xintercept = c(nowcast_start + 0.5,
-                            last_day + 0.5),
-             linetype = '41') +
-  #
+  theme_classic2() +
   geom_hline(yintercept = 1, linetype = '11') +
+  # ##
   geom_ribbon(aes(x = date,
                   ymin = Rt_lb, ymax = Rt_ub,
                   fill = model),
               alpha = 0.25) +
-  geom_line(aes(x = date, y = Rt, color = model), linewidth = 0.25) +
-  geom_point(aes(x = date, y = Rt, color = model), size = 0.5) +
-  scale_color_discrete(name = 'Random walk size') +
-  scale_fill_discrete(name = 'Random walk size') +
+  geom_line(aes(x = date, y = Rt, color = model),
+            linewidth = 0.25, show.legend = T) +
+  geom_point(aes(x = date, y = Rt, color = model),
+             size = 0.5,shape = 1,
+             show.legend = T) +
+  scale_color_discrete(name = 'Random walk') +
+  scale_fill_discrete(name = 'Random walk') +
+  ##
+  coord_cartesian(xlim = c(first_day,
+                           forecast_window),
+                  ylim = c(0, rt_max+0.15), expand = F) +
   ylab(expression(R[t])) +
-  annotate('text', x = first_day + 3,
-           y = rt_max, label = 'Historical period', size = 2.5) +
-  annotate('text', x = nowcast_start + 3,
-           y = rt_max, label = 'Nowcast', size = 2.5) +
-  annotate('text', x = last_day + 3,
-           y = rt_max, label = 'Forecast', size = 2.5) +
   xlab(NULL) +
-  ggtitle("c.")
+  ##
+  scale_x_date(breaks = '2 week',
+               date_minor_breaks = "1 weeks",
+               date_labels = "%b %d") +
+  ##
+  annotate('text', x = first_day + 3,
+           color = 'blue',
+           y = rt_max, label = 'C.',
+           fontface= 'bold',
+           size = 5) +
+  annotate('text', x = first_day + 35,
+           y = rt_max, label = 'Historical period',
+           size = 2) +
+  annotate('text', x = nowcast_start + 6,
+           y = rt_max, label = 'Nowcasting', size = 2) +
+  annotate('text', x = last_day + 6,
+           y = rt_max, label = 'Forecasting', size = 2) +
+  ##
+  geom_vline(xintercept = c(nowcast_start + 0.5,
+                            last_day + 0.5),
+             linewidth = 1.25,
+             alpha = 0.5,
+             linetype = 'solid', color = 'white') +
+  geom_vline(xintercept = c(nowcast_start + 0.5),
+             linetype = '22') +
+  geom_vline(xintercept = c(
+    last_day + 0.5),
+    linetype = '41') +
+  annotate('label',
+           x = forecast_window - 14.5,
+           size = 2,
+           #label.size = 0,
+           color = 'black',
+           y = 2.2,
+           angle = 90,
+           label = 'PRESENT')
 
 plot_rt1
 
 # dev.size()
-ggsave('img/RandomWalk.png', width = 7, height = 2.25)
+ggsave('img/RandomWalk.png', width = 6.5, height = 2)
+saveRDS(plot_rt1, "img/RandomWalk.RDS")
+

@@ -20,23 +20,26 @@ source('01_ReportsInfections.R')
 # THEN SET SLIDING WINDOW SIZE
 estimation_window <- 2
 
-t_start <- seq(2, nrow(incidence_df) - estimation_window)
+t_start <- seq(2, nrow(reports_df) - estimation_window)
 t_end <- t_start + estimation_window
+
+setnames(reports_df, "N", "I")
+reports_df$date_int <- 1:nrow(reports_df)
 
 # THEN ESTIMATE R(t) USING SLIDING WINDOWS
 getR <- EpiEstim::estimate_R(
-  incid = incidence_df,
+  incid = reports_df,
   method = "non_parametric_si",
   config = make_config(list(
     si_distr = serial_interval_pmf,
     t_start = t_start,
     t_end = t_end
   )),
-  backimputation_window = 5
+  backimputation_window = 15
 )
 
 # INCLUDE THE DECONVOLUTION
-getR$R$date_int <- getR$R$t_end - D_delay
+getR$R$date_int <- getR$R$t_end - seeding_time
 
 #
 EpiEstim_R <- getR$R[, c('t_start', 't_end', 'date_int', 'Median(R)',
@@ -46,29 +49,29 @@ names(EpiEstim_R) <- c('t_start', 't_end', "date_int", "Rt", "Rt_lb", "Rt_ub")
 
 EpiEstim_R$model <- '2 days'
 EpiEstim_R$date_int <- as.integer(EpiEstim_R$date_int)
-incidence_df <- data.frame(incidence_df)
+reports_df <- data.frame(reports_df)
 
-EpiEstim_R <- merge(EpiEstim_R, incidence_df[, c('date','date_int')])
+EpiEstim_R <- merge(EpiEstim_R, reports_df[, c('date', 'date_int')])
 EpiEstim_R_full <- EpiEstim_R
 
 # Repeat again to get another estimate
 estimation_window <- 9
-t_start <- seq(2, nrow(incidence_df) - estimation_window)
+t_start <- seq(2, nrow(reports_df) - estimation_window)
 t_end <- t_start + estimation_window
 
 getR <- EpiEstim::estimate_R(
-  incid = incidence_df ,
+  incid = reports_df ,
   method = "non_parametric_si",
   config = make_config(list(
     si_distr = serial_interval_pmf,
     t_start = t_start,
     t_end = t_end
   )),
-  backimputation_window = 5
+  backimputation_window = 15
 )
 
 # INCLUDE DECONVOLUTION
-getR$R$date_int <- getR$R$t_end - D_delay
+getR$R$date_int <- getR$R$t_end - seeding_time
 
 #
 EpiEstim_R <- getR$R[, c('t_start', 't_end', 'date_int', 'Median(R)',
@@ -78,7 +81,7 @@ names(EpiEstim_R) <- c('t_start', 't_end', "date_int", "Rt", "Rt_lb", "Rt_ub")
 
 EpiEstim_R$model <- '9 days'
 EpiEstim_R$date_int <- as.integer(EpiEstim_R$date_int)
-EpiEstim_R <- merge(EpiEstim_R, incidence_df[, c('date','date_int')])
+EpiEstim_R <- merge(EpiEstim_R, reports_df[, c('date', 'date_int')])
 
 EpiEstim_R_full <- rbind(EpiEstim_R, EpiEstim_R_full)
 
@@ -88,70 +91,71 @@ EpiEstim_R_full <- rbind(EpiEstim_R, EpiEstim_R_full)
 # ----------------------------------------------------------------------------
 # ////////////////////////////////////////////////////////////////////////////
 
-report_ymax <- 4000
-rt_ymax <- 4.0
+rt_max <- 3
+first_day <- min(reports_df$date)
+last_day <- max(reports_df$date)
+nowcast_start    = last_day - seeding_time
+forecast_window  = last_day + 15
 
-plot_rt1 <- ggplot(subset(EpiEstim_R_full, date >= day1)) +
+plot_rt1 <- ggplot(EpiEstim_R_full) +
+  ##
   theme_classic2() +
   geom_hline(yintercept = 1, linetype = '11') +
-  geom_vline(xintercept = c(as.Date("2020-03-30") + 0.5,
-                            as.Date("2020-04-11") + 0.5),
-             linetype = '41') +
-  geom_vline(xintercept = as.Date("2020-04-11") -
-               length(reporting_delay_pmf) + 0.5,
-             linetype = '21', color = 'pink') +
+  # ##
   geom_ribbon(aes(x = date,
                   ymin = Rt_lb, ymax = Rt_ub,
                   fill = model),
               alpha = 0.25) +
-  geom_line(aes(x = date, y = Rt, color = model), linewidth = 0.25) +
-  geom_point(aes(x = date, y = Rt, color = model), size = 0.5) +
-  scale_color_discrete(name = 'Sliding window size') +
-  scale_fill_discrete(name = 'Sliding window size') +
-  coord_cartesian(xlim = c(as.Date("2020-03-02"),
-                           as.Date("2020-04-18")),
-                  ylim = c(0, rt_ymax)) +
+  geom_line(aes(x = date, y = Rt, color = model),
+            linewidth = 0.25, show.legend = T) +
+  geom_point(aes(x = date, y = Rt, color = model),
+             size = 0.5,shape = 1,
+             show.legend = T) +
+  scale_color_discrete(name = 'Sliding window') +
+  scale_fill_discrete(name = 'Sliding window') +
+  ##
+  coord_cartesian(xlim = c(first_day,
+                           forecast_window),
+                  ylim = c(0, rt_max+0.15), expand = F) +
   ylab(expression(R[t])) +
-  annotate('text', x = as.Date("2020-03-05"),
-           y = rt_ymax, label = 'Historical period', size = 3) +
-  annotate('text', x = as.Date("2020-04-02"),
-           y = rt_ymax, label = 'Nowcast', size = 3) +
-  annotate('text', x = as.Date("2020-04-05"),
-           y = rt_ymax, label = 'Right-\ntruncation', size = 2,
-           vjust = 0.80, hjust = 0, color = scales::muted('red'))+
-  annotate('text', x = as.Date("2020-04-14"),
-           y = rt_ymax, label = 'Forecast', size = 3) +
-  xlab(NULL)
+  xlab(NULL) +
+  ##
+  scale_x_date(breaks = '2 week',
+               date_minor_breaks = "1 weeks",
+               date_labels = "%b %d") +
+  ##
+  annotate('text', x = first_day + 3,
+           color = 'blue',
+           y = rt_max, label = 'B.',
+           fontface= 'bold',
+           size = 5) +
+  annotate('text', x = first_day + 35,
+           y = rt_max, label = 'Historical period',
+           size = 2) +
+  annotate('text', x = nowcast_start + 6,
+           y = rt_max, label = 'Nowcasting', size = 2) +
+  annotate('text', x = last_day + 6,
+           y = rt_max, label = 'Forecasting', size = 2) +
+  ##
+  geom_vline(xintercept = c(nowcast_start + 0.5,
+                            last_day + 0.5),
+             linewidth = 1.25,
+             alpha = 0.5,
+             linetype = 'solid', color = 'white') +
+  geom_vline(xintercept = c(nowcast_start + 0.5),
+             linetype = '22') +
+  geom_vline(xintercept = c(
+    last_day + 0.5),
+    linetype = '41') +
+  annotate('label',
+           x = forecast_window - 14.5,
+           size = 2,
+           #label.size = 0,
+           color = 'black',
+           y = 2.2,
+           angle = 90,
+           label = 'PRESENT')
 
 plot_rt1
-
-# plot_report <- ggplot(subset(incidence_df, date >= day1)) +
-#   theme_classic2() +
-#   geom_vline(xintercept = c(as.Date("2020-03-30") + 0.5,
-#                             as.Date("2020-04-11") + 0.5),
-#              linetype = '41') +
-#   geom_vline(xintercept = as.Date("2020-04-11") -
-#                length(reporting_delay_pmf) + 0.5,
-#              linetype = '21', color = 'pink') +
-#   geom_col(aes(x = date, y = confirm),
-#            fill = grey(0.75), width = 0.5) +
-#   coord_cartesian(xlim = c(as.Date("2020-03-02"),
-#                            as.Date("2020-04-18")),
-#                   ylim = c(0, report_ymax)) +
-#   ylab("Reported cases") +
-#   xlab('Date') +
-#   annotate('text', x = as.Date("2020-03-05"),
-#            y = report_ymax, label = 'Historical period', size = 3) +
-#   annotate('text', x = as.Date("2020-04-02"),
-#            y = report_ymax, label = 'Nowcast', size = 3) +
-#   annotate('text', x = as.Date("2020-04-05"),
-#            y = report_ymax, label = 'Right-\ntruncation', size = 2,
-#            vjust = 0.80, hjust = 0, color = scales::muted('red'))+
-#   annotate('text', x = as.Date("2020-04-14"),
-#            y = report_ymax, label = 'Forecast', size = 3)
-#
-#
-# plot_rt1 / (plot_report) + plot_layout(guides = "collect")
-#
-# # dev.size()
-# ggsave('img/FixedSlidingWindow.png', width = 6*1.5, height = 3.5*1.3)
+ggsave('img/FixedSlidingWindow.png', width = 6.5, height = 1.5)
+saveRDS(plot_rt1, "img/FixedSlidingWindow.RDS")

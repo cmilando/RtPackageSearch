@@ -3,7 +3,6 @@
 #
 library(ggplot2)
 library(ggpubr)
-library(patchwork)
 library(data.table)
 
 # ////////////////////////////////////////////////////////////////////////////
@@ -136,8 +135,8 @@ reports_df <- linelist[, .N, by = report_date][order(report_date)]
 setnames(reports_df, 'report_date', 'date')
 
 #
-reports_df$type <- 'Reports'
-infections_df$type <- 'Infections'
+reports_df$type <- 'Observed\nreports'
+infections_df$type <- 'Unobserved\ninfections'
 
 #
 burn_in <- 6
@@ -178,75 +177,81 @@ report_ymax = 2000
 first_day <- min(reports_df$date)
 last_day <- max(reports_df$date)
 nowcast_start    = last_day - seeding_time
-forecast_window  = last_day + 10
+forecast_window  = last_day + 15
 
 ##
 
-ggplot(rbind(infections_df, reports_df)) +
+plot_inf <- ggplot(rbind(infections_df, reports_df)) +
   theme_classic2() +
-  ##
-  geom_vline(xintercept = c(nowcast_start + 0.5,
-                            last_day + 0.5),
-             linetype = '41') +
-  ##
-  # geom_col(aes(x = date, y = N, fill = type),
-  #          width = 0.5, show.legend = T,
-  #          position = position_dodge2(preserve = 'single')) +
-  # scale_fill_manual(name = NULL, values = c('pink', grey(0.75))) +
   # ##
-  geom_line(aes(x = date, y = N, color = type),
+  geom_line(aes(x = date, y = N, color = type,
+                linetype = type),
             linewidth = 0.5, show.legend = T) +
-  geom_point(aes(x = date, y = N, color = type),
-             size = 1,shape = 21, fill = 'white',
-             show.legend = T) +
+  scale_linetype_manual(name = NULL, values = c('solid', '11')) +
 
-  scale_color_manual(name = NULL, values = c('pink', grey(0.75))) +
+  geom_point(aes(x = date, y = N, color = type, shape = type),
+             size = 1, fill = 'white',
+             show.legend = T) +
+  scale_shape_manual(name = NULL, values = c(21, NA)) +
+  scale_color_manual(name = NULL, values = c(grey(0.75), 'pink')) +
   ##
   coord_cartesian(xlim = c(first_day,
                            forecast_window),
                   ylim = c(0, report_ymax+100), expand = F) +
-  ylab("Incidence") +
-  xlab('Date') +
+  ylab("Daily cases") +
+  xlab(NULL) +
   ##
   scale_x_date(breaks = '2 week',
                date_minor_breaks = "1 weeks",
                date_labels = "%b %d") +
   ##
-  annotate('text', x = first_day + 7,
+  annotate('text', x = first_day + 3,
+           color = 'blue',
+           y = report_ymax, label = 'A.',
+           fontface= 'bold',
+           size = 5) +
+  annotate('text', x = first_day + 35,
            y = report_ymax, label = 'Historical period',
-           size = 2.5) +
-  annotate('text', x = nowcast_start + 5,
-           y = report_ymax, label = 'Nowcast', size = 2.5) +
-  annotate('text', x = last_day + 5,
-         y = report_ymax, label = 'Forecast', size = 2.5) +
+           size = 2) +
+  annotate('text', x = nowcast_start + 6,
+           y = report_ymax, label = 'Nowcasting', size = 2) +
+  annotate('text', x = last_day + 6,
+         y = report_ymax, label = 'Forecasting', size = 2) +
   annotate('text', x = first_day + 11,
            color = scales::muted("red"),
            y = 1400, label = 'Peak 1', size = 2.5) +
   annotate('text', x = first_day + 41,
            color = scales::muted("red"),
            y = 1400, label = 'Peak 2', size = 2.5) +
-  annotate('text', x = nowcast_start + 2,
-           hjust = 0,
-           lineheight = 0.75,
-           color = grey(0.5),
-           y = 100, label = 'Right-\ntruncation',
-           size = 2.5) +
   annotate('segment',
-           arrow = arrow(type = "open", length = unit(0.01, "npc")),
+           arrow = arrow(type = "closed", length = unit(0.03, "npc")),
            color = grey(0.5),
-           linewidth = 0.25,
+           linewidth = 0.5,
            x = nowcast_start + 7.5,
            xend = nowcast_start + 9.5,
            y = 140,
            yend = 220) +
+  ##
+  geom_vline(xintercept = c(nowcast_start + 0.5,
+                            last_day + 0.5),
+             linewidth = 1.25,
+             alpha = 0.5,
+             linetype = 'solid', color = 'white') +
+  geom_vline(xintercept = c(nowcast_start + 0.5),
+             linetype = '22') +
+  geom_vline(xintercept = c(
+    last_day + 0.5),
+    linetype = '41') +
   annotate('label',
-           x = forecast_window - 9.5,
-           size = 2.25,
+           x = forecast_window - 14.5,
+           size = 2,
            #label.size = 0,
            color = 'black',
            y = 1500,
            angle = 90,
-           label = 'PRESENT DAY') +
-  ggtitle("a.")
+           label = 'PRESENT') +
+  theme(legend.key.spacing.y = unit(.25, 'cm'))
 
-ggsave('img/Infections.png', width = 7, height = 3)
+plot_inf
+ggsave('img/Infections.png', width = 6.5, height = 2)
+saveRDS(plot_inf, "img/Infections.RDS")
