@@ -23,7 +23,7 @@ create_linelist_data <- function() {
   sine_wave <- amplitude * sin(2 * pi * frequency * days / period)
   ## peak 2 - sharp
   days      <- 1:50
-  amplitude <- 0.55
+  amplitude <- 0.65
   period    <- 50
   frequency <- 4
   sine_wave2 <- amplitude * sin(2 * pi * frequency * days / period)
@@ -32,11 +32,15 @@ create_linelist_data <- function() {
                      rep(sine_wave2[23], 10),
                      sine_wave2[12:23],
                      rep(sine_wave2[23], 10),
-                     sine_wave[46:70]))
-  lambda    <- exp(new_ts[1:75]) * 1000 - 300
-  cases     <- sapply(lambda, function(l) rpois(1, l + exp(rnorm(1, 0, 2))))
+                     sine_wave[46:70],
+                     rep(sine_wave[70], 10)))
+  lambda    <- exp(new_ts[1:82]) * 1000 - 300
+
+  cases     <- sapply(lambda, function(l) rpois(1, l + exp(rnorm(1, 0, 3))))
   ## a little splice
-  cases[58:59] <- c(355, 312)
+  cases[5:6] <- cases[1:2]
+  cases[68:71] <- c(300, 312, 305, 330)
+  cases[76] <- 270
   ##
   dt        <- seq.Date(from = '2020-03-01', length.out = length(cases))
   df        <- data.frame(date = dt, N = cases)
@@ -136,7 +140,7 @@ reports_df$type <- 'Reports'
 infections_df$type <- 'Infections'
 
 #
-burn_in <- 5
+burn_in <- 6
 reports_df <- subset(reports_df,
                      date >= min(infections_df$date) + burn_in &
                      date <= max(infections_df$date))
@@ -174,7 +178,7 @@ report_ymax = 2000
 first_day <- min(reports_df$date)
 last_day <- max(reports_df$date)
 nowcast_start    = last_day - seeding_time
-forecast_window  = last_day + 7
+forecast_window  = last_day + 10
 
 ##
 
@@ -185,24 +189,64 @@ ggplot(rbind(infections_df, reports_df)) +
                             last_day + 0.5),
              linetype = '41') +
   ##
-  geom_col(aes(x = date, y = N, fill = type),
-           width = 0.5, show.legend = T,
-           position = position_dodge2(preserve = 'single')) +
+  # geom_col(aes(x = date, y = N, fill = type),
+  #          width = 0.5, show.legend = T,
+  #          position = position_dodge2(preserve = 'single')) +
+  # scale_fill_manual(name = NULL, values = c('pink', grey(0.75))) +
   # ##
-  scale_fill_manual(name = NULL, values = c('pink', grey(0.75))) +
+  geom_line(aes(x = date, y = N, color = type),
+            linewidth = 0.5, show.legend = T) +
+  geom_point(aes(x = date, y = N, color = type),
+             size = 1,shape = 21, fill = 'white',
+             show.legend = T) +
+
+  scale_color_manual(name = NULL, values = c('pink', grey(0.75))) +
   ##
   coord_cartesian(xlim = c(first_day,
                            forecast_window),
-                  ylim = c(0, report_ymax)) +
+                  ylim = c(0, report_ymax+100), expand = F) +
   ylab("Incidence") +
   xlab('Date') +
   ##
-  annotate('text', x = first_day + 3,
-           y = report_ymax, label = 'Historical period', size = 2.5) +
-  annotate('text', x = nowcast_start + 3,
+  scale_x_date(breaks = '2 week',
+               date_minor_breaks = "1 weeks",
+               date_labels = "%b %d") +
+  ##
+  annotate('text', x = first_day + 7,
+           y = report_ymax, label = 'Historical period',
+           size = 2.5) +
+  annotate('text', x = nowcast_start + 5,
            y = report_ymax, label = 'Nowcast', size = 2.5) +
-    annotate('text', x = last_day + 3,
-           y = report_ymax, label = 'Forecast', size = 2.5) +
+  annotate('text', x = last_day + 5,
+         y = report_ymax, label = 'Forecast', size = 2.5) +
+  annotate('text', x = first_day + 11,
+           color = scales::muted("red"),
+           y = 1400, label = 'Peak 1', size = 2.5) +
+  annotate('text', x = first_day + 41,
+           color = scales::muted("red"),
+           y = 1400, label = 'Peak 2', size = 2.5) +
+  annotate('text', x = nowcast_start + 2,
+           hjust = 0,
+           lineheight = 0.75,
+           color = grey(0.5),
+           y = 100, label = 'Right-\ntruncation',
+           size = 2.5) +
+  annotate('segment',
+           arrow = arrow(type = "open", length = unit(0.01, "npc")),
+           color = grey(0.5),
+           linewidth = 0.25,
+           x = nowcast_start + 7.5,
+           xend = nowcast_start + 9.5,
+           y = 140,
+           yend = 220) +
+  annotate('label',
+           x = forecast_window - 9.5,
+           size = 2.25,
+           #label.size = 0,
+           color = 'black',
+           y = 1500,
+           angle = 90,
+           label = 'PRESENT DAY') +
   ggtitle("a.")
 
-ggsave('img/Infections.png', width = 7, height = 2.25)
+ggsave('img/Infections.png', width = 7, height = 3)

@@ -91,8 +91,19 @@ lastday <- max(R_df_all$date)
 # ----------------------------------------------------------------------------
 # ////////////////////////////////////////////////////////////////////////////
 
+rt_max <- 2.5
+first_day <- min(reports_df$date)
+last_day <- max(reports_df$date)
+nowcast_start    = last_day - seeding_time
+forecast_window  = last_day + 7
+
 plot_rt1 <- ggplot(subset(R_df_all)) +
   theme_classic2() +
+  ##
+  geom_vline(xintercept = c(nowcast_start + 0.5,
+                            last_day + 0.5),
+             linetype = '41') +
+  #
   geom_hline(yintercept = 1, linetype = '11') +
   geom_ribbon(aes(x = date,
                   ymin = Rt_lb, ymax = Rt_ub,
@@ -103,9 +114,16 @@ plot_rt1 <- ggplot(subset(R_df_all)) +
   scale_color_discrete(name = 'Random walk size') +
   scale_fill_discrete(name = 'Random walk size') +
   ylab(expression(R[t])) +
-  xlab(NULL)
+  annotate('text', x = first_day + 3,
+           y = rt_max, label = 'Historical period', size = 2.5) +
+  annotate('text', x = nowcast_start + 3,
+           y = rt_max, label = 'Nowcast', size = 2.5) +
+  annotate('text', x = last_day + 3,
+           y = rt_max, label = 'Forecast', size = 2.5) +
+  xlab(NULL) +
+  ggtitle("c.")
 
 plot_rt1
 
 # dev.size()
-ggsave('img/RandomWalk.png', width = 6*1.5, height = 3.5*1.3)
+ggsave('img/RandomWalk.png', width = 7, height = 2.25)
