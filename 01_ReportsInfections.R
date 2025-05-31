@@ -81,8 +81,9 @@ infect_to_test_pmf <- c(
 )
 
 # 2) time from taking a test to it getting into a state database
+# for consistency, make this also start with 0
 reporting_delay_pmf <- c(
-  0.3786, 0.3724, 0.1662, 0.0622, 0.0166, 0.004
+  0.3786, 0.3724, 0.1662, 0.0622, 0.017
 )
 
 # ////////////////////////////////////////////////////////////////////////////
@@ -101,22 +102,24 @@ total_delay <-
   # and this one
   sample(0:(length(reporting_delay_pmf) - 1),
          size = nrow(linelist),
-         prob = reporting_delay_pmf, replace = TRUE) +
-  # some random noise
-  sample(c(-2:2), size = nrow(linelist), replace = T)
+         prob = reporting_delay_pmf, replace = TRUE)
 
-
+D <- data.frame(i = 0:max(total_delay))
+D$ct <- NA
+for(i in 1:nrow(D)) {
+  D$ct[i] <- length(which(total_delay == D$i[i]))
+}
+D$Px <- D$ct / sum(D$ct)
+D
 get_mean <- function(pmf, start) {
-  stopifnot(start %in% c(0, 1))
-  weighted.mean(x = start:(length(pmf) - 1 + start),
-                w = pmf)
+  weighted.mean(x = 0:(length(pmf) - 1), w = pmf)
 }
 
 ## some error with seeding time here but
 ## i'll calculate it outside
-w1 <- get_mean(generation_interval_pmf, 0)
-w2 <- get_mean(infect_to_test_pmf, 0)
-w3 <- get_mean(reporting_delay_pmf, 1)
+w1 <- get_mean(generation_interval_pmf)
+w2 <- get_mean(infect_to_test_pmf)
+w3 <- get_mean(reporting_delay_pmf) + 1
 seeding_time <- round(w1 + w2 + w3)
 
 linelist$report_date <- linelist$date + total_delay
@@ -163,6 +166,7 @@ reports_df$Px[(cases_len - px_len + 1):cases_len] <- tail_Px
 
 reports_df$N      <- reports_df$N * reports_df$Px
 reports_df$N      <- as.integer(reports_df$N)
+tail(reports_df)
 reports_df$Px <- NULL
 
 # ////////////////////////////////////////////////////////////////////////////
@@ -205,11 +209,6 @@ plot_inf <- ggplot(rbind(infections_df, reports_df)) +
                date_minor_breaks = "1 weeks",
                date_labels = "%b %d") +
   ##
-  annotate('text', x = first_day + 3,
-           color = 'blue',
-           y = report_ymax, label = 'A.',
-           fontface= 'bold',
-           size = 5) +
   annotate('text', x = first_day + 35,
            y = report_ymax, label = 'Historical period',
            size = 2) +

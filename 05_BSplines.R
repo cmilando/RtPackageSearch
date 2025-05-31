@@ -1,9 +1,6 @@
-# Fixed Sliding Windows
+# B-Splines
 
-# install.packages('EpiEstim',
-#                  repos = c('https://mrc-ide.r-universe.dev',
-#                            'https://cloud.r-project.org'))
-library(EpiEstim)
+library(EpiLPS)
 
 #
 source('01_ReportsInfections.R')
@@ -14,76 +11,32 @@ source('01_ReportsInfections.R')
 # ----------------------------------------------------------------------------
 # ////////////////////////////////////////////////////////////////////////////
 
-# EPIESTIM DOES NOT DO NOW-CASTING
-# but here is where you would do it if it did
+get_epilps_output <- function(k) {
 
-# THEN SET SLIDING WINDOW SIZE
-estimation_window <- 2
+  # discrete dist
+  si_spec <- Idist(probs = serial_interval_pmf)
 
-t_start <- seq(2, nrow(reports_df) - estimation_window)
-t_end <- t_start + estimation_window
+  #
+  LPSfit <- estimR(incidence = reports_df$N,
+                   si = si_spec$pvec,
+                   K = k)
 
-setnames(reports_df, "N", "I")
-reports_df$date_int <- 1:nrow(reports_df)
+  # create dataframe
+  # shift backwards by the seeding_time, aka the sum
+  # of the means of the delay distributions
+  plot_epilps <- data.frame(
+    model = paste0("k = ",k),
+    date = reports_df$date - seeding_time,
+    Rt = LPSfit$RLPS$Rq0.50,
+    Rt_lb = LPSfit$RLPS$Rq0.025,
+    Rt_ub = LPSfit$RLPS$Rq0.975
+  )
+  return(plot_epilps)
+}
 
-# THEN ESTIMATE R(t) USING SLIDING WINDOWS
-getR <- EpiEstim::estimate_R(
-  incid = reports_df,
-  method = "non_parametric_si",
-  config = make_config(list(
-    si_distr = serial_interval_pmf,
-    t_start = t_start,
-    t_end = t_end
-  )),
-  backimputation_window = 15
-)
-
-# INCLUDE THE DECONVOLUTION
-getR$R$date_int <- getR$R$t_end - seeding_time
-
-#
-EpiEstim_R <- getR$R[, c('t_start', 't_end', 'date_int', 'Median(R)',
-                         'Quantile.0.05(R)', 'Quantile.0.95(R)')]
-
-names(EpiEstim_R) <- c('t_start', 't_end', "date_int", "Rt", "Rt_lb", "Rt_ub")
-
-EpiEstim_R$model <- '2 days'
-EpiEstim_R$date_int <- as.integer(EpiEstim_R$date_int)
-reports_df <- data.frame(reports_df)
-
-EpiEstim_R <- merge(EpiEstim_R, reports_df[, c('date', 'date_int')])
-EpiEstim_R_full <- EpiEstim_R
-
-# Repeat again to get another estimate
-estimation_window <- 9
-t_start <- seq(2, nrow(reports_df) - estimation_window)
-t_end <- t_start + estimation_window
-
-getR <- EpiEstim::estimate_R(
-  incid = reports_df ,
-  method = "non_parametric_si",
-  config = make_config(list(
-    si_distr = serial_interval_pmf,
-    t_start = t_start,
-    t_end = t_end
-  )),
-  backimputation_window = 15
-)
-
-# INCLUDE DECONVOLUTION
-getR$R$date_int <- getR$R$t_end - seeding_time
-
-#
-EpiEstim_R <- getR$R[, c('t_start', 't_end', 'date_int', 'Median(R)',
-                         'Quantile.0.05(R)', 'Quantile.0.95(R)')]
-
-names(EpiEstim_R) <- c('t_start', 't_end', "date_int", "Rt", "Rt_lb", "Rt_ub")
-
-EpiEstim_R$model <- '9 days'
-EpiEstim_R$date_int <- as.integer(EpiEstim_R$date_int)
-EpiEstim_R <- merge(EpiEstim_R, reports_df[, c('date', 'date_int')])
-
-EpiEstim_R_full <- rbind(EpiEstim_R, EpiEstim_R_full)
+df1 <- get_epilps_output(30)
+df3 <- get_epilps_output(9)
+epilps_df <- rbind(df1, df3)
 
 # ////////////////////////////////////////////////////////////////////////////
 # ----------------------------------------------------------------------------
@@ -97,7 +50,7 @@ last_day <- max(reports_df$date)
 nowcast_start    = last_day - seeding_time
 forecast_window  = last_day + 15
 
-plot_rt1 <- ggplot(EpiEstim_R_full) +
+plot_rt1 <- ggplot(epilps_df) +
   ##
   theme_classic2() +
   geom_hline(yintercept = 1, linetype = '11') +
@@ -111,8 +64,8 @@ plot_rt1 <- ggplot(EpiEstim_R_full) +
   geom_point(aes(x = date, y = Rt, color = model),
              size = 0.5,shape = 1,
              show.legend = T) +
-  scale_color_discrete(name = 'Sliding window') +
-  scale_fill_discrete(name = 'Sliding window') +
+  scale_color_discrete(name = '# of B-Splines') +
+  scale_fill_discrete(name = '# of B-Splines') +
   ##
   coord_cartesian(xlim = c(first_day,
                            forecast_window),
@@ -152,5 +105,7 @@ plot_rt1 <- ggplot(EpiEstim_R_full) +
            label = 'PRESENT')
 
 plot_rt1
-ggsave('img/FixedSlidingWindow.png', width = 6.5, height = 1.5)
-saveRDS(plot_rt1, "img/FixedSlidingWindow.RDS")
+
+ggsave('img/BSplines.png', width = 6.5, height = 1.5)
+saveRDS(plot_rt1, "img/BSplines.RDS")
+

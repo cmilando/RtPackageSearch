@@ -1,5 +1,10 @@
 # Random Walk
 
+
+# install.packages("EpiNow2",
+#                  repos = c("https://epiforecasts.r-universe.dev",
+#                            getOption("repos")))
+
 #
 library(EpiNow2)
 
@@ -22,69 +27,38 @@ mean(gi_pmf) + mean(infect_to_test) + mean(sym_report_delay_pmf)
 setnames(reports_df, 'N', 'confirm')
 
 ## -------------------
-rw = 2
+# Including all the options so I can see how  this works
+# see defaults here: https://epiforecasts.io/EpiNow2/reference/obs_opts.html
+get_EpiNow2output <- function(rw) {
 
-res_epinow <- epinow(
-  data            = reports_df,
-  generation_time = generation_time_opts(gi_pmf),
-  delays          = delay_opts(infect_to_test),
-  truncation      = trunc_opts(sym_report_delay_pmf),
-  rt              = rt_opts(rw = rw),
-  backcalc        = backcalc_opts(prior = 'reports'),
-  stan            = stan_opts(chains = 4, cores = 4)
-)
+  res_epinow <- epinow(
+    data                 = reports_df,
+    generation_time      = generation_time_opts(gi_pmf),
+    delays               = delay_opts(infect_to_test),
+    truncation           = trunc_opts(sym_report_delay_pmf),
+    rt                   = rt_opts(rw = rw),
+    gp                   = NULL, # turn off the GP model here!
+    backcalc             = backcalc_opts(prior = 'reports'),
+    stan                 = stan_opts(chains = 4, cores = 4),
+    obs                  = obs_opts(), # ok to use these defaults
+    forecast             = forecast_opts(),
+    CrIs                 = c(0.2, 0.5, 0.9)
+  )
 
-plot(res_epinow)
+  R_df <- subset(res_epinow$estimates$summarised, variable == 'R')
 
-R_df <- subset(res_epinow$estimates$summarised, variable == 'R')
-R_df$type
-R_df$date_int <- 1:nrow(R_df) - 1
-R_df$model <- paste0(rw, " days")
-R_df$Rt <- R_df$median
-R_df$Rt_lb <- R_df$lower_90
-R_df$Rt_ub <- R_df$upper_90
+  R_df$model <- paste0(rw, " days")
+  R_df$Rt <- R_df$median
+  R_df$Rt_lb <- R_df$lower_90
+  R_df$Rt_ub <- R_df$upper_90
+  return(R_df)
+}
 
-cases_df <- subset(res_epinow$estimates$summarised, variable == 'reported_cases')
-cases_df$date_int <- 1:nrow(R_df) - 1
-cases_df$model <- paste0(rw, " day")
-cases_df$reports <- cases_df$median
-cases_df$reports_lb <- cases_df$lower_90
-cases_df$reports_ub <- cases_df$upper_90
-
-## -------------------
-rw = 6
-
-res_epinow2 <- epinow(
-  data            = reports_df,
-  generation_time = generation_time_opts(gi_pmf),
-  delays          = delay_opts(infect_to_test),
-  rt              = rt_opts(rw = rw),
-  truncation      = trunc_opts(sym_report_delay_pmf),
-  backcalc        = backcalc_opts(prior = 'reports'),
-  stan            = stan_opts(chains = 4, cores = 4)
-)
-
-plot(res_epinow2)
-
-R_df2 <- subset(res_epinow2$estimates$summarised, variable == 'R')
-R_df2$date_int <- 1:nrow(R_df2) - 1
-R_df2$model <- paste0(rw, " days")
-R_df2$Rt <- R_df2$median
-R_df2$Rt_lb <- R_df2$lower_90
-R_df2$Rt_ub <- R_df2$upper_90
-
-cases_df2 <- subset(res_epinow2$estimates$summarised, variable == 'reported_cases')
-cases_df2$date_int <- 1:nrow(R_df2) - 1
-cases_df2$model <- paste0(rw, " days")
-cases_df2$reports <- cases_df2$median
-cases_df2$reports_lb <- cases_df2$lower_90
-cases_df2$reports_ub <- cases_df2$upper_90
+R_df <- get_EpiNow2output(2)
+R_df2 <- get_EpiNow2output(6)
 
 ##
 R_df_all <- rbind(R_df, R_df2)
-cases_df_all <- rbind(cases_df, cases_df2)
-lastday <- max(R_df_all$date)
-
 # ////////////////////////////////////////////////////////////////////////////
 # ----------------------------------------------------------------------------
 # PLOT R(t)
@@ -124,11 +98,6 @@ plot_rt1 <- ggplot(R_df_all) +
                date_minor_breaks = "1 weeks",
                date_labels = "%b %d") +
   ##
-  annotate('text', x = first_day + 3,
-           color = 'blue',
-           y = rt_max, label = 'C.',
-           fontface= 'bold',
-           size = 5) +
   annotate('text', x = first_day + 35,
            y = rt_max, label = 'Historical period',
            size = 2) +

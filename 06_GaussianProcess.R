@@ -1,9 +1,12 @@
-# Fixed Sliding Windows
+# Random Walk
 
-# install.packages('EpiEstim',
-#                  repos = c('https://mrc-ide.r-universe.dev',
-#                            'https://cloud.r-project.org'))
-library(EpiEstim)
+
+# install.packages("EpiNow2",
+#                  repos = c("https://epiforecasts.r-universe.dev",
+#                            getOption("repos")))
+
+#
+library(EpiNow2)
 
 #
 source('01_ReportsInfections.R')
@@ -14,76 +17,47 @@ source('01_ReportsInfections.R')
 # ----------------------------------------------------------------------------
 # ////////////////////////////////////////////////////////////////////////////
 
-# EPIESTIM DOES NOT DO NOW-CASTING
-# but here is where you would do it if it did
+##
+gi_pmf         <- NonParametric(pmf = generation_interval_pmf)
+infect_to_test <- NonParametric(pmf = infect_to_test_pmf)
+sym_report_delay_pmf <- NonParametric(pmf = reporting_delay_pmf)
 
-# THEN SET SLIDING WINDOW SIZE
-estimation_window <- 2
+mean(gi_pmf) + mean(infect_to_test) + mean(sym_report_delay_pmf)
 
-t_start <- seq(2, nrow(reports_df) - estimation_window)
-t_end <- t_start + estimation_window
+setnames(reports_df, 'N', 'confirm')
 
-setnames(reports_df, "N", "I")
-reports_df$date_int <- 1:nrow(reports_df)
+## -------------------
+get_EpiNow2output <- function(l = 1.5, b = 0.2) {
 
-# THEN ESTIMATE R(t) USING SLIDING WINDOWS
-getR <- EpiEstim::estimate_R(
-  incid = reports_df,
-  method = "non_parametric_si",
-  config = make_config(list(
-    si_distr = serial_interval_pmf,
-    t_start = t_start,
-    t_end = t_end
-  )),
-  backimputation_window = 15
-)
+  res_epinow <- epinow(
+    data                 = reports_df,
+    generation_time      = generation_time_opts(gi_pmf),
+    delays               = delay_opts(infect_to_test),
+    truncation           = trunc_opts(sym_report_delay_pmf),
+    rt                   = rt_opts(), # use default
+    gp                   = gp_opts(boundary_scale = l,
+                                   basis_prop = b),
+    backcalc             = backcalc_opts(prior = 'reports'),
+    stan                 = stan_opts(chains = 4, cores = 4),
+    obs                  = obs_opts(), # ok to use these defaults
+    forecast             = forecast_opts(),
+    CrIs                 = c(0.2, 0.5, 0.9)
+  )
 
-# INCLUDE THE DECONVOLUTION
-getR$R$date_int <- getR$R$t_end - seeding_time
+  R_df <- subset(res_epinow$estimates$summarised, variable == 'R')
 
-#
-EpiEstim_R <- getR$R[, c('t_start', 't_end', 'date_int', 'Median(R)',
-                         'Quantile.0.05(R)', 'Quantile.0.95(R)')]
+  R_df$model <- paste0("l = ", l)
+  R_df$Rt <- R_df$median
+  R_df$Rt_lb <- R_df$lower_90
+  R_df$Rt_ub <- R_df$upper_90
+  return(R_df)
+}
 
-names(EpiEstim_R) <- c('t_start', 't_end', "date_int", "Rt", "Rt_lb", "Rt_ub")
+R_df <- get_EpiNow2output(l = 3)
+R_df2 <- get_EpiNow2output(l = 1.5)
 
-EpiEstim_R$model <- '2 days'
-EpiEstim_R$date_int <- as.integer(EpiEstim_R$date_int)
-reports_df <- data.frame(reports_df)
-
-EpiEstim_R <- merge(EpiEstim_R, reports_df[, c('date', 'date_int')])
-EpiEstim_R_full <- EpiEstim_R
-
-# Repeat again to get another estimate
-estimation_window <- 9
-t_start <- seq(2, nrow(reports_df) - estimation_window)
-t_end <- t_start + estimation_window
-
-getR <- EpiEstim::estimate_R(
-  incid = reports_df ,
-  method = "non_parametric_si",
-  config = make_config(list(
-    si_distr = serial_interval_pmf,
-    t_start = t_start,
-    t_end = t_end
-  )),
-  backimputation_window = 15
-)
-
-# INCLUDE DECONVOLUTION
-getR$R$date_int <- getR$R$t_end - seeding_time
-
-#
-EpiEstim_R <- getR$R[, c('t_start', 't_end', 'date_int', 'Median(R)',
-                         'Quantile.0.05(R)', 'Quantile.0.95(R)')]
-
-names(EpiEstim_R) <- c('t_start', 't_end', "date_int", "Rt", "Rt_lb", "Rt_ub")
-
-EpiEstim_R$model <- '9 days'
-EpiEstim_R$date_int <- as.integer(EpiEstim_R$date_int)
-EpiEstim_R <- merge(EpiEstim_R, reports_df[, c('date', 'date_int')])
-
-EpiEstim_R_full <- rbind(EpiEstim_R, EpiEstim_R_full)
+##
+R_df_all <- rbind(R_df, R_df2)
 
 # ////////////////////////////////////////////////////////////////////////////
 # ----------------------------------------------------------------------------
@@ -97,7 +71,7 @@ last_day <- max(reports_df$date)
 nowcast_start    = last_day - seeding_time
 forecast_window  = last_day + 15
 
-plot_rt1 <- ggplot(EpiEstim_R_full) +
+plot_rt1 <- ggplot(R_df_all) +
   ##
   theme_classic2() +
   geom_hline(yintercept = 1, linetype = '11') +
@@ -111,8 +85,8 @@ plot_rt1 <- ggplot(EpiEstim_R_full) +
   geom_point(aes(x = date, y = Rt, color = model),
              size = 0.5,shape = 1,
              show.legend = T) +
-  scale_color_discrete(name = 'Sliding window') +
-  scale_fill_discrete(name = 'Sliding window') +
+  scale_color_discrete(name = 'Length scale') +
+  scale_fill_discrete(name = 'Length scale') +
   ##
   coord_cartesian(xlim = c(first_day,
                            forecast_window),
@@ -152,5 +126,8 @@ plot_rt1 <- ggplot(EpiEstim_R_full) +
            label = 'PRESENT')
 
 plot_rt1
-ggsave('img/FixedSlidingWindow.png', width = 6.5, height = 1.5)
-saveRDS(plot_rt1, "img/FixedSlidingWindow.RDS")
+
+# dev.size()
+ggsave('img/GaussianProcess.png', width = 6.5, height = 2)
+saveRDS(plot_rt1, "img/GaussianProcess.RDS")
+
