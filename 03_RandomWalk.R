@@ -74,6 +74,21 @@ forecast_window  = last_day + 15
 plot_rt1 <- ggplot(R_df_all) +
   ##
   theme_classic2() +
+  # ##
+  annotate('rect',
+           xmin = as.Date('2020-03-13') - 0.5,
+           xmax = as.Date('2020-03-25') + 0.5,
+           ymin = -Inf, ymax = Inf,
+           fill = 'lightyellow',
+           alpha = 0.75,
+           color = 'white') +
+  annotate('rect',
+           xmin = as.Date('2020-04-16') - 0.5,
+           xmax = as.Date('2020-04-23') + 0.5,
+           ymin = -Inf, ymax = Inf,
+           fill = 'lightyellow',
+           alpha = 0.75,
+           color = 'white') +
   geom_hline(yintercept = 1, linetype = '11') +
   # ##
   geom_ribbon(aes(x = date,
@@ -98,7 +113,7 @@ plot_rt1 <- ggplot(R_df_all) +
                date_minor_breaks = "1 weeks",
                date_labels = "%b %d") +
   ##
-  annotate('text', x = first_day + 35,
+  annotate('text', x = first_day + 55,
            y = rt_max, label = 'Historical period',
            size = 2) +
   annotate('text', x = nowcast_start + 6,

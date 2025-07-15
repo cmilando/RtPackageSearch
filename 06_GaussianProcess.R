@@ -14,6 +14,15 @@ source('01_ReportsInfections.R')
 # ////////////////////////////////////////////////////////////////////////////
 # ----------------------------------------------------------------------------
 # MODEL R(t)
+#
+# GP refs:
+#  - https://peterroelants.github.io/posts/gaussian-process-kernels/
+#  - https://epiforecasts.io/EpiNow2/articles/gaussian_process_implementation_details.html
+#  - https://wellcomeopenresearch.org/articles/5-112
+#  - https://katbailey.github.io/post/gaussian-processes-for-dummies/
+#  - https://epiforecasts.io/EpiNow2/articles/estimate_infections.html
+#  - https://thegradient.pub/gaussian-process-not-quite-for-dummies/
+#  - https://rss.onlinelibrary.wiley.com/doi/full/10.1111/rssa.12919
 # ----------------------------------------------------------------------------
 # ////////////////////////////////////////////////////////////////////////////
 
@@ -27,7 +36,8 @@ mean(gi_pmf) + mean(infect_to_test) + mean(sym_report_delay_pmf)
 setnames(reports_df, 'N', 'confirm')
 
 ## -------------------
-get_EpiNow2output <- function(l = 1.5, b = 0.2) {
+# many things that you could change
+get_EpiNow2output <- function(l = 1.5, b = 0.2, kernel = 'se') {
 
   res_epinow <- epinow(
     data                 = reports_df,
@@ -36,7 +46,8 @@ get_EpiNow2output <- function(l = 1.5, b = 0.2) {
     truncation           = trunc_opts(sym_report_delay_pmf),
     rt                   = rt_opts(), # use default
     gp                   = gp_opts(boundary_scale = l,
-                                   basis_prop = b),
+                                   basis_prop = b,
+                                   kernel = kernel),
     backcalc             = backcalc_opts(prior = 'reports'),
     stan                 = stan_opts(chains = 4, cores = 4),
     obs                  = obs_opts(), # ok to use these defaults
@@ -74,6 +85,21 @@ forecast_window  = last_day + 15
 plot_rt1 <- ggplot(R_df_all) +
   ##
   theme_classic2() +
+  # ##
+  annotate('rect',
+           xmin = as.Date('2020-03-13') - 0.5,
+           xmax = as.Date('2020-03-25') + 0.5,
+           ymin = -Inf, ymax = Inf,
+           fill = 'lightyellow',
+           alpha = 0.75,
+           color = 'white') +
+  annotate('rect',
+           xmin = as.Date('2020-04-16') - 0.5,
+           xmax = as.Date('2020-04-23') + 0.5,
+           ymin = -Inf, ymax = Inf,
+           fill = 'lightyellow',
+           alpha = 0.75,
+           color = 'white') +
   geom_hline(yintercept = 1, linetype = '11') +
   # ##
   geom_ribbon(aes(x = date,
@@ -98,7 +124,7 @@ plot_rt1 <- ggplot(R_df_all) +
                date_minor_breaks = "1 weeks",
                date_labels = "%b %d") +
   ##
-  annotate('text', x = first_day + 35,
+  annotate('text', x = first_day + 55,
            y = rt_max, label = 'Historical period',
            size = 2) +
   annotate('text', x = nowcast_start + 6,

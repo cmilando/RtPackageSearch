@@ -15,7 +15,7 @@ source('01_ReportsInfections.R')
 # ////////////////////////////////////////////////////////////////////////////
 
 # RtESTIM assumes that the serial interval is gamma
-# here is code that will find a close gamma for your discrete distribution
+# here is code that will find a gamma for your discrete distribution
 
 library(nloptr)
 
@@ -53,7 +53,9 @@ fit <- nloptr(
   eval_f = my_eval,
   lb = lower_bounds,
   ub = upper_bounds,
-  opts = list("algorithm" = "NLOPT_LN_SBPLX", "xtol_rel" = 1e-8, "maxeval" = 1000),
+  opts = list("algorithm" = "NLOPT_LN_SBPLX",
+              "xtol_rel" = 1e-8,
+              "maxeval" = 1000),
   data = x
 )
 
@@ -76,6 +78,7 @@ lines(x, col = 'red')
 # ////////////////////////////////////////////////////////////////////////////
 
 get_rtestim_output <- function(k) {
+
   # rt estimation
   rtestim <- cv_estimate_rt(
     dist_gamma      = c(si_shape, si_rate),
@@ -86,19 +89,20 @@ get_rtestim_output <- function(k) {
     maxiter         = 1e8
   )
 
-  rtestim$lambda.min
-
   #approximate confidence bands
   rtestim_cb <- confband(rtestim, lambda = "lambda.1se")
   #lambda: the selected lambda. May be a scalar value,
   # or in the case of cv_poisson_rt objects, "lambda.min" or "lambda.max"
 
   # create dataframe
-  # shift backwards by the seeding_time, aka the sum
+  # if you want to, shift backwards by the seeding_time, aka the sum
   # of the means of the delay distributions
   plot_rtestim <- data.frame(
     model = paste0("k = ",k),
-    date = reports_df$date - seeding_time,
+    ## *****
+    ## date = reports_df$date - seeding_time,
+    date = reports_df$date,
+    ###
     Rt = rtestim_cb$fit,
     Rt_lb = rtestim_cb$`2.5%`,
     Rt_ub = rtestim_cb$`97.5%`
@@ -125,6 +129,21 @@ forecast_window  = last_day + 15
 plot_rt1 <- ggplot(rtestim_df) +
   ##
   theme_classic2() +
+  # ##
+  annotate('rect',
+           xmin = as.Date('2020-03-13') - 0.5,
+           xmax = as.Date('2020-03-25') + 0.5,
+           ymin = -Inf, ymax = Inf,
+           fill = 'lightyellow',
+           alpha = 0.75,
+           color = 'white') +
+  annotate('rect',
+           xmin = as.Date('2020-04-16') - 0.5,
+           xmax = as.Date('2020-04-23') + 0.5,
+           ymin = -Inf, ymax = Inf,
+           fill = 'lightyellow',
+           alpha = 0.75,
+           color = 'white') +
   geom_hline(yintercept = 1, linetype = '11') +
   # ##
   geom_ribbon(aes(x = date,
@@ -149,7 +168,7 @@ plot_rt1 <- ggplot(rtestim_df) +
                date_minor_breaks = "1 weeks",
                date_labels = "%b %d") +
   ##
-  annotate('text', x = first_day + 35,
+  annotate('text', x = first_day + 55,
            y = rt_max, label = 'Historical period',
            size = 2) +
   annotate('text', x = nowcast_start + 6,

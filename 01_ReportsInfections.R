@@ -188,6 +188,21 @@ forecast_window  = last_day + 15
 plot_inf <- ggplot(rbind(infections_df, reports_df)) +
   theme_classic2() +
   # ##
+  annotate('rect',
+           xmin = as.Date('2020-03-13') - 0.5,
+           xmax = as.Date('2020-03-25') + 0.5,
+           ymin = -Inf, ymax = Inf,
+           fill = 'lightyellow',
+           alpha = 0.75,
+           color = 'white') +
+  annotate('rect',
+           xmin = as.Date('2020-04-16') - 0.5,
+           xmax = as.Date('2020-04-23') + 0.5,
+           ymin = -Inf, ymax = Inf,
+           fill = 'lightyellow',
+           alpha = 0.75,
+           color = 'white') +
+  # ##
   geom_line(aes(x = date, y = N, color = type,
                 linetype = type),
             linewidth = 0.5, show.legend = T) +
@@ -209,19 +224,19 @@ plot_inf <- ggplot(rbind(infections_df, reports_df)) +
                date_minor_breaks = "1 weeks",
                date_labels = "%b %d") +
   ##
-  annotate('text', x = first_day + 35,
+  annotate('text', x = first_day + 55,
            y = report_ymax, label = 'Historical period',
            size = 2) +
   annotate('text', x = nowcast_start + 6,
            y = report_ymax, label = 'Nowcasting', size = 2) +
   annotate('text', x = last_day + 6,
          y = report_ymax, label = 'Forecasting', size = 2) +
-  annotate('text', x = first_day + 11,
+  annotate('text', x = first_day + 12,
            color = scales::muted("red"),
-           y = 1400, label = 'Peak 1', size = 2.5) +
-  annotate('text', x = first_day + 41,
+           y = 1500, label = 'Wave 1', size = 2.5) +
+  annotate('text', x = first_day + 42,
            color = scales::muted("red"),
-           y = 1400, label = 'Peak 2', size = 2.5) +
+           y = 1500, label = 'Wave 2', size = 2.5) +
   annotate('segment',
            arrow = arrow(type = "closed", length = unit(0.03, "npc")),
            color = grey(0.5),
@@ -248,9 +263,9 @@ plot_inf <- ggplot(rbind(infections_df, reports_df)) +
            color = 'black',
            y = 1500,
            angle = 90,
-           label = 'PRESENT') +
-  theme(legend.key.spacing.y = unit(.25, 'cm'))
+           label = 'PRESENT')
 
 plot_inf
+
 ggsave('img/Infections.png', width = 6.5, height = 2)
 saveRDS(plot_inf, "img/Infections.RDS")

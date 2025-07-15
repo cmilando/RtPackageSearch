@@ -11,10 +11,22 @@ To find packages, we used these scripts:
 
 Then here is the code for the images in the manuscript:
 
+Figure 3:
+
 - `01_ReportsInfections.R`
 - `02_FixedSlidingWindows.R`
 - `03_RandomWalk.R`
-- B-splines
-- Filtering
-- Gaussian process
+- `04_Filtering.R`
+- `05_B-splines.R`
+- `06_GaussianProcess.R`
+
+To run all
+
 - `07_mergePlots.R`
+
+
+Then to make Supplemental Figure S1:
+
+- `08_ern.R`
+- `09_EpiInvert.R`
+- `10_estimateR.R`
