@@ -24,9 +24,13 @@ To run all
 
 - `07_mergePlots.R`
 
-
 Then to make Supplemental Figure S1:
 
 - `08_ern.R`
 - `09_EpiInvert.R`
 - `10_estimateR.R`
+- `11_mergeSFig1.R`
+
+Then to make the supplemental GP figure:
+
+- `12_GP_demo.R`

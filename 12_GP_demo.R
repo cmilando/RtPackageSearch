@@ -194,4 +194,4 @@ p3 <- ggplot() + theme_classic2() +
 
 p0 / p2 / p1 / p3
 
-ggsave("gp_supp_fig2.png", width = 8, height = 8)
+ggsave("img/gp_supp.png", width = 8, height = 8)
