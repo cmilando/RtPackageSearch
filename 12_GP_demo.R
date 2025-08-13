@@ -149,8 +149,7 @@ p2 <- ggplot() + theme_classic2() +
   geom_point(aes(x = X1, y = y1), size = 1.5) +
   xlab("X") + ylab("Y") +  ggtitle("b.")
 
-p0 / p2 / p1
-ggsave("gp_supp_fig1.png", width = 6, height = 6)
+
 
 # ////////////////////////////////////////////////////////////////////////////
 # ----------------------------------------------------------------------------
@@ -190,8 +189,9 @@ p3 <- ggplot() + theme_classic2() +
   geom_line(aes(x = X2, y = sin(X2)), color = 'blue',
             linetype = 'dashed') +
   geom_point(aes(x = X1, y = y1)) +
-  xlab("X") + ylab("Y")
+  xlab("X") + ylab("Y") +
+  ggtitle("d.")
 
-p3
+p0 / p2 / p1 / p3
 
-ggsave("gp_supp_fig2.png", width = 6, height = 2)
+ggsave("gp_supp_fig2.png", width = 8, height = 8)

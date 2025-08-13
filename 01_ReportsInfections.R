@@ -205,14 +205,14 @@ plot_inf <- ggplot(rbind(infections_df, reports_df)) +
   # ##
   geom_line(aes(x = date, y = N, color = type,
                 linetype = type),
-            linewidth = 0.5, show.legend = T) +
+            linewidth = 0.75, show.legend = T) +
   scale_linetype_manual(name = NULL, values = c('solid', '11')) +
 
   geom_point(aes(x = date, y = N, color = type, shape = type),
              size = 1, fill = 'white',
              show.legend = T) +
   scale_shape_manual(name = NULL, values = c(21, NA)) +
-  scale_color_manual(name = NULL, values = c(grey(0.75), 'pink')) +
+  scale_color_manual(name = NULL, values = c(grey(0.75), 'magenta')) +
   ##
   coord_cartesian(xlim = c(first_day,
                            forecast_window),
@@ -239,8 +239,8 @@ plot_inf <- ggplot(rbind(infections_df, reports_df)) +
            y = 1500, label = 'Wave 2', size = 2.5) +
   annotate('segment',
            arrow = arrow(type = "closed", length = unit(0.03, "npc")),
-           color = grey(0.5),
-           linewidth = 0.5,
+           color = grey(0.15),
+           linewidth = 0.75,
            x = nowcast_start + 7.5,
            xend = nowcast_start + 9.5,
            y = 140,

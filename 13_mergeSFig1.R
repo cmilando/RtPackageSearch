@@ -7,11 +7,11 @@ library(patchwork)
 # ////////////////////////////////////////////////////////////////////////////
 rm(list = ls()); gc();
 source('01_ReportsInfections.R'); rm(list = ls()); gc();
-source('02_FixedSlidingWindows.R'); rm(list = ls()); gc();
-source('03_RandomWalk.R'); rm(list = ls()); gc();
-source('04_Filtering.R'); rm(list = ls()); gc();
-source('05_BSplines.R'); rm(list = ls()); gc();
-source('06_GaussianProcess.R'); rm(list = ls()); gc();
+# source('02_FixedSlidingWindows.R'); rm(list = ls()); gc();
+# source('03_RandomWalk.R'); rm(list = ls()); gc();
+# source('04_Filtering.R'); rm(list = ls()); gc();
+# source('05_BSplines.R'); rm(list = ls()); gc();
+# source('06_GaussianProcess.R'); rm(list = ls()); gc();
 
 # ////////////////////////////////////////////////////////////////////////////
 # ----------------------------------------------------------------------------
@@ -41,7 +41,7 @@ pB <- readRDS("img/FixedSlidingWindow.RDS") +
            color = 'blue',
            y = rt_max,
            hjust = 0,
-           label = 'B. Sliding window (EpiEstim)',
+           label = 'B. EpiEstim',
            fontface= 'bold',
            size = 3) +
   theme(axis.text.x = element_blank(),
@@ -50,12 +50,12 @@ pB <- readRDS("img/FixedSlidingWindow.RDS") +
         panel.grid.major = element_line(color = grey(0.9),
                                         linewidth = 0.1))
 
-pC <- readRDS("img/BSplines.RDS") +
+pC <- readRDS("img/ern.RDS") +
   annotate('text', x = first_day + 1,
            color = 'blue',
            y = rt_max,
            hjust = 0,
-           label = 'C. P-splines (EpiLPS)',
+           label = 'C. ern',
            fontface= 'bold',
            size = 3) +
   theme(axis.text.x = element_blank(),
@@ -64,27 +64,12 @@ pC <- readRDS("img/BSplines.RDS") +
         panel.grid.major = element_line(color = grey(0.9),
                                         linewidth = 0.1))
 
-pD <- readRDS("img/Filtering.RDS") +
+pD <- readRDS("img/estimateR.RDS") +
   annotate('text', x = first_day + 1,
            color = 'blue',
            y = rt_max,
            hjust = 0,
-           label = 'D. Trend-filtering (RtEstim)',
-           fontface= 'bold',
-           size = 3) +
-  theme(axis.text.x = element_blank(),
-        legend.title = element_text(size = 8),
-        legend.text = element_text(size = 8),
-    panel.grid.major = element_line(color = grey(0.9),
-                                    linewidth = 0.1))
-
-
-pE <- readRDS("img/RandomWalk.RDS") +
-  annotate('text', x = first_day + 1,
-           color = 'blue',
-           y = rt_max,
-           hjust = 0,
-           label = 'E. Random walk (EpiNow2, epinowcast)',
+           label = 'D. EstimateR',
            fontface= 'bold',
            size = 3) +
   theme(axis.text.x = element_blank(),
@@ -93,23 +78,24 @@ pE <- readRDS("img/RandomWalk.RDS") +
         panel.grid.major = element_line(color = grey(0.9),
                                         linewidth = 0.1))
 
-pF <- readRDS("img/GaussianProcess.RDS") +
+
+pE <- readRDS("img/EpiInvert.RDS") +
   annotate('text', x = first_day + 1,
            color = 'blue',
            y = rt_max,
            hjust = 0,
-           label = 'F. Gaussian Process (EpiNow2, epinowcast)',
+           label = 'E. EpiInvert',
            fontface= 'bold',
            size = 3) +
-  theme(
+  theme(axis.text.x = element_blank(),
         legend.title = element_text(size = 8),
         legend.text = element_text(size = 8),
         panel.grid.major = element_line(color = grey(0.9),
                                         linewidth = 0.1))
 
 
-pA / pB / pC / pD / pE / pF
+pA / pB / pC / pD / pE
 
 ##
-ggsave('img/Fig3.png', width = 8, height = 8)
+ggsave('img/SFig1.png', width = 8, height = 6.5)
 
