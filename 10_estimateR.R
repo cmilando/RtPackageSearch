@@ -15,6 +15,7 @@ source('01_ReportsInfections.R')
 # ////////////////////////////////////////////////////////////////////////////
 
 
+# unclear if there is functionality at present to use non-parametric distributions
 shape_onset_to_report = 2.7
 scale_onset_to_report = 1.6
 onset_to_report <- list(name="gamma",

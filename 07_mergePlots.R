@@ -98,7 +98,7 @@ pF <- readRDS("img/GaussianProcess.RDS") +
            color = 'blue',
            y = rt_max,
            hjust = 0,
-           label = 'F. Gaussian Process (EpiNow2, epinowcast)',
+           label = 'F. Gaussian Process (EpiNow2)',
            fontface= 'bold',
            size = 3) +
   theme(
