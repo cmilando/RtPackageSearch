@@ -45,49 +45,53 @@ pB <- readRDS("img/FixedSlidingWindow.RDS") +
            fontface= 'bold',
            size = 3) +
   theme(axis.text.x = element_blank(),
+        axis.title.y = element_text(angle = 0, vjust = 0.5),
         legend.title = element_text(size = 8),
         legend.text = element_text(size = 8),
         panel.grid.major = element_line(color = grey(0.9),
                                         linewidth = 0.1))
 
-pC <- readRDS("img/BSplines.RDS") +
+pC <- readRDS("img/Filtering.RDS") +
   annotate('text', x = first_day + 1,
            color = 'blue',
            y = rt_max,
            hjust = 0,
-           label = 'C. P-splines (EpiLPS)',
+           label = 'C. Trend-filtering (RtEstim)',
            fontface= 'bold',
            size = 3) +
   theme(axis.text.x = element_blank(),
-        legend.title = element_text(size = 8),
-        legend.text = element_text(size = 8),
-        panel.grid.major = element_line(color = grey(0.9),
-                                        linewidth = 0.1))
-
-pD <- readRDS("img/Filtering.RDS") +
-  annotate('text', x = first_day + 1,
-           color = 'blue',
-           y = rt_max,
-           hjust = 0,
-           label = 'D. Trend-filtering (RtEstim)',
-           fontface= 'bold',
-           size = 3) +
-  theme(axis.text.x = element_blank(),
+        axis.title.y = element_text(angle = 0, vjust = 0.5),
         legend.title = element_text(size = 8),
         legend.text = element_text(size = 8),
     panel.grid.major = element_line(color = grey(0.9),
                                     linewidth = 0.1))
 
 
+pD <- readRDS("img/BSplines.RDS") +
+  annotate('text', x = first_day + 1,
+           color = 'blue',
+           y = rt_max,
+           hjust = 0,
+           label = 'D. P-splines (EpiLPS)',
+           fontface= 'bold',
+           size = 3) +
+  theme(axis.text.x = element_blank(),
+        axis.title.y = element_text(angle = 0, vjust = 0.5),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8),
+        panel.grid.major = element_line(color = grey(0.9),
+                                        linewidth = 0.1))
+
 pE <- readRDS("img/RandomWalk.RDS") +
   annotate('text', x = first_day + 1,
            color = 'blue',
            y = rt_max,
            hjust = 0,
-           label = 'E. Random walk (EpiNow2, epinowcast)',
+           label = 'E. Random walk (EpiNow2)',
            fontface= 'bold',
            size = 3) +
   theme(axis.text.x = element_blank(),
+        axis.title.y = element_text(angle = 0, vjust = 0.5),
         legend.title = element_text(size = 8),
         legend.text = element_text(size = 8),
         panel.grid.major = element_line(color = grey(0.9),
@@ -103,6 +107,7 @@ pF <- readRDS("img/GaussianProcess.RDS") +
            size = 3) +
   theme(
         legend.title = element_text(size = 8),
+        axis.title.y = element_text(angle = 0, vjust = 0.5),
         legend.text = element_text(size = 8),
         panel.grid.major = element_line(color = grey(0.9),
                                         linewidth = 0.1))

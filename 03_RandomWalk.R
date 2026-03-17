@@ -32,7 +32,7 @@ setnames(reports_df, 'N', 'confirm')
 get_EpiNow2output <- function(rw) {
 
   res_epinow <- epinow(
-    data                 = reports_df,
+    data                 = reports_df[, c(1, 2)],
     generation_time      = generation_time_opts(gi_pmf),
     delays               = delay_opts(infect_to_test),
     truncation           = trunc_opts(sym_report_delay_pmf),
@@ -45,7 +45,7 @@ get_EpiNow2output <- function(rw) {
     CrIs                 = c(0.2, 0.5, 0.9)
   )
 
-  R_df <- subset(res_epinow$estimates$summarised, variable == 'R')
+  R_df <- subset(summary(res_epinow, type = 'parameters'), variable == 'R')
 
   R_df$model <- paste0(rw, " days")
   R_df$Rt <- R_df$median
